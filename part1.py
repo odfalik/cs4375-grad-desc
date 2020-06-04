@@ -11,8 +11,8 @@ def main():
     model.train(
         df=training_df,
         y_attr_name='mpg',
-        iterations=10,
-        learning_rate=1
+        iterations=5,
+        learning_rate=0.000000005
     )
 
 if __name__ == "__main__":
