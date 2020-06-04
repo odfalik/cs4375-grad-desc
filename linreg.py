@@ -1,48 +1,66 @@
 import numpy as np
 
-class LinReg(object):
+class LinRegModel(object):
 
-    def __init__(self, sample_df, learning_rate, iterations):
-        self.sample_df = sample_df
-        self.num_samples = len(sample_df)
-        self.learning_rate = learning_rate
-        self.iterations = iterations
+    def __init__(self):
+        pass
 
-    def calcMSE(self, err_vector):
-        return np.matmul( err_vector.transpose(), err_vector ) / 2 * self.num_samples
-
-    def calcErr(self, x, w, y):
-        return np.subtract( np.matmul(x, w), y )
+    def calcMSE(self, err_v):
+        return err_v.transpose().dot(err_v) / (2 * len(err_v))
 
     def getHypothesizedValue(self, weights, point):
         return weights * point
 
-    def train(self):
+    def calcErr(self, x_m, w_v, y_v):
+        h_v = x_m.dot(w_v)
+        return h_v - y_v
 
-        true_values = self.sample_df.area.to_numpy()    # vector of true area values
-        self.sample_df = self.sample_df.drop(columns='area')      # data points, remove area column from data
-        sample_mat = self.sample_df.to_numpy()
+    def getNewWeight(self, old_weight, learning_rate, err_v, xi_v):
 
-        for i in range(self.iterations):
-            weights = np.random.random_sample(len(sample_mat[0]))   # initialize weights vector for each iteration
+        sum = 0
+        for j, xi in enumerate(xi_v):           # loop over all measurements assoc w/ specific parameter
+            sum += err_v[j] * xi                # sum that point's error times the point's dimension corresponding to weight
+
+        gradient = sum / len(xi_v)
+        return old_weight - learning_rate * gradient
 
 
-            while(True):   # descent stopping conditions
+    def train(self, df, y_attr_name, iterations=1, learning_rate=1):
+        true_v = df[y_attr_name].to_numpy().reshape(-1, 1)              # vector of true area values
+        data_m = df.drop(columns=y_attr_name).to_numpy()                # matrix of data points
+        
+        # print(data_m)
 
-                err_vector = self.calcErr(sample_mat, weights, true_values)
+        for iteration in range(iterations):
 
-                for sample in sample_mat:
+            weights_v = np.random.random_sample((len(data_m[0]), 1))            # initialize weights vector to random value [0.0, 1.0)
+            print(f'weights_v init: {weights_v}')
 
-                    new_weights = np.empty(1)
-                    for old_weight in weights:
+            # while(True):    # descent stopping condition
+            for step in range(100000): # TEMP TODO switch to legitimate stopping condition
+                
+                err_v = self.calcErr(x_m=data_m, w_v=weights_v, y_v=true_v)
+                new_weights_v = np.empty((len(weights_v), 1)) # empty vector of weights
 
-                        sum_thing = 0       # TODO clean up
-                        for j in range(0, np.shape(sample_mat)[1]):  # iterate on each attribute
-                            sum_thing += err_vector[j] * sample[j]
-                        gradient = sum_thing / self.num_samples
+                for i, xi_v in enumerate(data_m.transpose()):
+                    print(f'i:{i}, xi_v:{xi_v}, old_weight:{weights_v[i]}')
+                    np.append(
+                        new_weights_v,
+                        self.getNewWeight(
+                            old_weight=weights_v[i],
+                            learning_rate=learning_rate,
+                            err_v=err_v,
+                            xi_v=xi_v
+                        )
+                    )
+                weights_v = new_weights_v
 
-                    new_weight = old_weight - self.learning_rate * gradient
-                    weights = np.append(new_weights, new_weight)
+                if (step % 200 == 0):
+                    print(f'i:{iteration} weights:{weights_v} MSE:{self.calcMSE(err_v)}')
 
-                print(self.calcMSE(err_vector))
-                # if (calcMSE(err_vector) < )
+
+
+
+
+    def test(self, df, y_col_name):
+        pass

@@ -1,14 +1,19 @@
 import numpy as numpy
 import pandas as pd
-from linreg import LinReg
+from linreg import LinRegModel
 
 def main():
 
-    #read csv
-    training_df = pd.read_csv('forestfires_training.csv') # TODO do not hardcode path
+    # read csv
+    training_df = pd.read_csv('mpg_training.csv') # TODO do not hardcode path?
 
-    model = LinReg(training_df, 1, 1)
-    model.train()
+    model = LinRegModel()
+    model.train(
+        df=training_df,
+        y_attr_name='mpg',
+        iterations=10,
+        learning_rate=1
+    )
 
 if __name__ == "__main__":
     main()
