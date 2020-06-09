@@ -27,21 +27,20 @@ class LinRegModel(object):
         return new_weight
 
 
-    def train(self, training_x_df, training_y_df, iterations=1, learning_rate=1):
+    def train(self, training_x_df, training_y_df, iterations=1, learning_rate=1, delta_weight_threshold=.00001):
         true_v = training_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
-        data_m = training_x_df.to_numpy()                               # matrix of data points
-        data_m = np.hstack((np.ones((len(data_m),1)), data_m))
+        data_m = training_x_df.to_numpy()                               
+        data_m = np.hstack((np.ones((len(data_m),1)), data_m))          # matrix of data points
 
-        plot_data = np.zeros((1,5))
+        plot_data = np.zeros((1, data_m.shape[1] + 2))
+
+        
         
         for iteration in range(iterations):
 
-            weights_v = (np.random.random_sample((len(data_m[0]), 1)) - (1/2)) / 5  # initialize weights vector to random value [0.0, 1.0)
-
-
-            err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)
+            weights_v = (np.random.random_sample((len(data_m[0]), 1)) - (1/2)) / 5  # randomly initialize weights vector
+            err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)            # calculate error vector
             # plot_data = np.vstack((plot_data, np.hstack(( weights_v.T, np.array([self.calcMSE(err_v), 0]).reshape(1,2) ))))
-
 
             for step in range(10000000):
 
@@ -57,34 +56,59 @@ class LinRegModel(object):
                 new_MSE = self.calcMSE(err_v)
 
 
-                plot_data = np.vstack((plot_data, np.hstack(( weights_v.T, np.array([new_MSE, iteration]).reshape(1,2) ))))
 
-                if (new_MSE < 90):
+                delta_weights_v = np.absolute(old_weights_v - new_weights_v)
+                if ((delta_weights_v < delta_weight_threshold).all()):
                     # print(f'END CONDITION with MSE:{new_MSE} after {step} steps. weights_v:{weights_v}')
+                    iter_MSE = new_MSE
                     break
-                elif (new_MSE > old_MSE):
-                    # print(f'Gradient ascent with MSE:{new_MSE} after {step} steps')
-                    learning_rate = learning_rate * 0.7
-                    weights_v = old_weights_v
+                elif (new_MSE > old_MSE):                   # if gradient ascent by overstepping
+                    learning_rate = learning_rate * 0.7     # lower learning rate
+                    weights_v = old_weights_v               # revert weights
                 else:
-                    learning_rate = learning_rate * 1.1
-                    pass
+                    plot_data = np.vstack((plot_data, np.hstack(( np.array([iteration, new_MSE]).reshape(1,2), weights_v.T ))))
+                    learning_rate = learning_rate * 1.1     # accelerate learning rate
+            
+
         
         # After all iterations
+        plot_data = np.delete(plot_data, obj=0, axis=0)         # remove zeros row from plot_data
+
+        MSE_col = plot_data[:,1]
+        min_MSE_index = np.where( MSE_col == np.amin(MSE_col))  # min_MSE_index == index of row of plot data with minimum MSE
+        min_MSE_row = plot_data[min_MSE_index]
+        self.weights_v = min_MSE_row[0,2:]
+
         fig = plt.figure()
         ax = plt.axes(projection='3d')
-        plot_data = np.delete(plot_data, obj=0, axis=0)
-        ax.scatter3D(plot_data[:,1], plot_data[:,2], plot_data[:,3], c=plot_data[:,4], cmap='Set1')
-        plt.show()
+        ax.scatter3D(
+            xs=plot_data[:,6],  # weight
+            ys=plot_data[:,3],  # weight
+            zs=plot_data[:,1],  # MSE
+            c=plot_data[:,0],   # iteration
+            cmap='Set1'
+        )
+        # plt.show()
 
-    def test(self, df, y_col_name):
-        pass
+    def test(self, testing_x_df, testing_y_df):
+        true_v = testing_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
+        data_m = testing_x_df.to_numpy()
+        data_m = np.hstack((np.ones((len(data_m),1)), data_m))          # matrix of data points
+        predicted_v = data_m.dot(self.weights_v).reshape(-1, 1)
+        mse = self.calcMSE(predicted_v - true_v)
+        print(mse)
+
 
 def main(datasets):
     model = LinRegModel()
     model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        iterations=15,
-        learning_rate=0.000000005
+        iterations=10,
+        learning_rate=0.000000005,
+        delta_weight_threshold=.00001
+    )
+    model.test(
+        testing_x_df=datasets['testing_x_df'],
+        testing_y_df=datasets['testing_y_df']
     )

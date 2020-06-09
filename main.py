@@ -9,9 +9,12 @@ def preprocess(x_feature_names, y_feature_name):
     # get DF containing raw data
     url = 'http://utdallas.edu/~oxf170130/cs4375-grad-desc/auto-mpg.csv'
 
-    df = pd.read_csv(io.StringIO(requests.get(url).content.decode('utf-8')),
-        usecols=x_feature_names+[y_feature_name]
-    )
+    if (x_feature_names and y_feature_name):
+        df = pd.read_csv(io.StringIO(requests.get(url).content.decode('utf-8')),
+            usecols=x_feature_names+[y_feature_name]
+        )
+    else:
+        df = pd.read_csv(io.StringIO(requests.get(url).content.decode('utf-8')) )
 
     # split into training and testing datasets
     split_mask = np.random.rand(len(df)) < 0.8
@@ -24,14 +27,13 @@ def preprocess(x_feature_names, y_feature_name):
     }
 
 def main():
-    x_feature_names = ['weight', 'horsepower']
+    x_feature_names = ['cylinders', 'displacement', 'horsepower', 'weight', 'acceleration', 'year', 'origin']
     y_feature_name = 'mpg'
 
     datasets = preprocess(x_feature_names, y_feature_name)
 
     p1(datasets)
-
-    # p2(datasets)
+    p2(datasets)
     
 
 if __name__ == "__main__":
