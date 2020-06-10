@@ -27,14 +27,14 @@ class LinRegModel(object):
         return new_weight
 
 
-    def train(self, training_x_df, training_y_df, iterations=1, learning_rate=1, delta_weight_threshold=.00001):
+    def train(self, training_x_df, training_y_df, descents=1, learning_rate=1, delta_weight_threshold=.00001):
         true_v = training_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
         data_m = training_x_df.to_numpy()                               
         data_m = np.hstack((np.ones((len(data_m),1)), data_m))          # matrix of data points
 
         plot_data = np.zeros((1, data_m.shape[1] + 2))
         
-        for iteration in range(iterations):
+        for descent in range(descents):
 
             weights_v = (np.random.random_sample((len(data_m[0]), 1)) - (1/2)) / 5  # randomly initialize weights vector
             err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)            # calculate error vector
@@ -56,38 +56,52 @@ class LinRegModel(object):
                 if ((delta_weights_v < delta_weight_threshold).all()):
                     iter_MSE = new_MSE
                     break
-                elif (new_MSE > old_MSE):                   # if gradient ascent by overstepping
-                    learning_rate = learning_rate * 0.7     # lower learning rate
-                    weights_v = old_weights_v               # revert weights
-                else:
-                    plot_data = np.vstack((plot_data, np.hstack(( np.array([iteration, new_MSE]).reshape(1,2), weights_v.T ))))
-                    learning_rate = learning_rate * 1.1     # accelerate learning rate
+                elif (new_MSE > old_MSE):                       # if gradient ascent by overstepping
+                    learning_rate = learning_rate * 0.7         # lower learning rate
+                    weights_v = old_weights_v                   # revert weights
+                else:   
+                    plot_data = np.vstack((plot_data, np.hstack(( np.array([descent, new_MSE]).reshape(1,2), weights_v.T ))))
+                    learning_rate = learning_rate * 1.1         # accelerate learning rate
             
 
-        
-        # After all iterations
-
+        # After all descents
         plot_data = np.delete(plot_data, obj=0, axis=0)         # remove zeros row from plot_data
         MSE_col = plot_data[:,1]
-        min_MSE_index = np.where(MSE_col == np.amin(MSE_col))  # index of row of plot data with minimum MSE
+        min_MSE_index = np.where(MSE_col == np.amin(MSE_col))   # index of row of plot data with minimum MSE
         min_MSE_row = plot_data[min_MSE_index]
         min_MSE = min_MSE_row[0,1]
-        self.weights_v = min_MSE_row[0,2:]
+        self.weights_v = min_MSE_row[0,2:]                      # ideal weights selected from descent with lowest MSE
         fig = plt.figure()
         ax = plt.axes(projection='3d')
         ax.scatter3D(
             xs=plot_data[:,6],  # weight
             ys=plot_data[:,3],  # weight
             zs=plot_data[:,1],  # MSE
-            c=plot_data[:,0],   # iteration
+            c=plot_data[:,0],   # descent
             cmap='Set1'
         )
         plt.show()
+        return min_MSE
 
     def test(self, testing_x_df, testing_y_df):
-        true_v = testing_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
+        true_v = testing_y_df.to_numpy().reshape(-1, 1)                 # vector of true area values
         data_m = testing_x_df.to_numpy()
         data_m = np.hstack((np.ones((len(data_m),1)), data_m))          # matrix of data points
         predicted_v = data_m.dot(self.weights_v).reshape(-1, 1)
         mse = self.calcMSE(predicted_v - true_v)
         return predicted_v
+
+def train(model, datasets):
+    mse = model.train(
+        training_x_df=datasets['training_x_df'],
+        training_y_df=datasets['training_y_df'],
+        descents=1, learning_rate=0.000000005, delta_weight_threshold=0.000001  # training hyperparameters
+    )
+    return mse, model.weights_v
+
+def test(model, datasets):
+    predictions_v = model.test(
+        testing_x_df=datasets['testing_x_df'],
+        testing_y_df=datasets['testing_y_df']
+    )
+    return model.calcMSE(datasets['testing_y_df'].to_numpy())
