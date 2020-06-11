@@ -4,11 +4,12 @@ import requests, io, sys
 import part1, part2
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
 data_url    = 'http://utdallas.edu/~oxf170130/cs4375-grad-desc/auto-mpg.csv'
-regressors  = ['cylinders', 'displacement', 'horsepower', 'weight', 'acceleration', 'year']
+regressors  = ['cylinders', 'displacement', 'acceleration', 'horsepower', 'weight', 'year']
 regressand  = 'mpg'
 draw_plots  = not (len(sys.argv) >= 2 and sys.argv[1] == 'noplot')
 
@@ -25,6 +26,10 @@ def getDatasets(regressors, regressand):
 
         # split into training and testing datasets
         split_mask = np.random.rand(len(df)) < 0.8
+        
+        training_x_df = df[split_mask][regressors]
+
+
         return {
             'training_x_df': df[split_mask][regressors],
             'training_y_df': df[split_mask][[regressand]],
@@ -57,7 +62,7 @@ def main():
 
     # Part 1 Training and Testing
     print('P1 -- Start')
-    p1_model =                          part1.LinRegModel()
+    p1_model =                          part1.LinRegModel(draw_plots)
     p1_training_mse, p1_weights_v =     part1.train(p1_model, datasets)
     p1_testing_mse =                    part1.test(p1_model, datasets)
     print('P1 -- Testing MSE: %.2f with weights %s' % (p1_testing_mse, p1_weights_v))
