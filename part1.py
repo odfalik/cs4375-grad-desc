@@ -42,7 +42,7 @@ class LinRegModel(object):
             err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)            # calculate error vector
             # training_log = np.vstack((training_log, np.hstack(( weights_v.T, np.array([self.calcMSE(err_v), 0]).reshape(1,2) ))))
 
-            for step in range(1000000):
+            for step in range(10000):
                 
                 old_weights_v = np.array(weights_v, copy=True)
                 old_err_v = err_v
@@ -64,19 +64,22 @@ class LinRegModel(object):
                     weights_v = old_weights_v                   # revert weights
                     err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)
                 else:
-                    if (step % 200 == 0):
+                    if (step % 100 == 0):
                         training_log = np.vstack((training_log, np.hstack(( np.array([descent, step, new_MSE]).reshape(1,3), weights_v.T ))))
+                    if (step % 1000 == 0):
+                        print(f'Descent {descent} \t Step {step} \t MSE {new_MSE}')
                     learning_rate = learning_rate * 1.1         # accelerate learning rate
             
 
         # After all descents
         # training log post processing
-        training_log = np.delete(training_log, obj=0, axis=0)   # remove zeros row from training_log
+        if (training_log.shape[0] != 1):
+            training_log = np.delete(training_log, obj=0, axis=0)   # remove zeros row from training_log
         MSE_col = training_log[:,2]
-        min_MSE_index = np.where(MSE_col == np.amin(MSE_col))   # index of row of plot data with minimum MSE
+        min_MSE_index = np.where(MSE_col == np.amin(MSE_col))       # index of row of plot data with minimum MSE
         min_MSE_row = training_log[min_MSE_index]
         min_MSE = min_MSE_row[0,1]
-        self.weights_v = min_MSE_row[0,3:]                      # ideal weights selected from descent with lowest MSE
+        self.weights_v = min_MSE_row[0,3:]                          # ideal weights selected from descent with lowest MSE
 
         if (self.draw_plots):
             
@@ -84,24 +87,25 @@ class LinRegModel(object):
             if (len(self.regressands) > 2):     # ensure enough descents and dimensions to plot
                 fig1 = plt.figure(1)
                 ax = plt.axes(projection='3d')
-                weight_indices = (3, 4)         # selects two regressands whose weight to plot
-                ax.set_xlabel('Weight ' + self.regressands[weight_indices[0]])
-                ax.set_ylabel('Weight ' + self.regressands[weight_indices[1]])
+                regressand_indices = (0, 1)     # selects two regressands whose weight to plot
+                ax.set_xlabel('Weight ' + self.regressands[regressand_indices[0]])
+                ax.set_ylabel('Weight ' + self.regressands[regressand_indices[1]])
                 ax.set_zlabel('MSE')
                 ax.scatter3D(
-                    xs=training_log[:,weight_indices[0]],   # weight
-                    ys=training_log[:,weight_indices[1]],   # weight
-                    zs=training_log[:,2],                   # MSE
-                    c=training_log[:,0],                    # descent
-                    cmap='Set1'
+                    xs=training_log[:,4+regressand_indices[0]],     # weight
+                    ys=training_log[:,4+regressand_indices[1]],     # weight
+                    zs=training_log[:,2],                           # MSE
+                    c=training_log[:,1],                            # descent
+                    cmap='plasma'
                 )
 
-            # plot of MSE, all weights over steps for a single iteration
+            # plot of MSE, all weights over steps for a single descent
             if (descents == 1):
                 fig2, (ax1, ax2) = plt.subplots(2)
                 for idx, regressand in enumerate(self.regressands):
                     color = (random.random(), random.random(), random.random())
-                    ax2.plot(training_log[:,1], training_log[:,3+idx], c=color, label=regressand+' weight')
+                    ax2.plot(training_log[:,1], training_log[:,4+idx], c=color, label=regressand+' weight')
+                ax2.plot(training_log[:,1], training_log[:,3], c=color, label='bias') # plot bias
                 ax2.legend(loc='upper right')
                 ax2.set_xlabel('Step')
                 ax2.set_ylabel('Weight')
@@ -124,7 +128,7 @@ def train(model, datasets):
     mse = model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        descents=1, learning_rate=0.0000000001, delta_weight_threshold=0.0000001  # training hyperparameters
+        descents=8, learning_rate=0.0000000001, delta_weight_threshold=0.0000005  # training hyperparameters
     )
     return mse, model.weights_v
 

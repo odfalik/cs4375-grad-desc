@@ -4,7 +4,6 @@ import requests, io, sys
 import part1, part2
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
