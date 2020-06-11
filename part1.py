@@ -1,7 +1,7 @@
 import numpy as np
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-import random
+import random, math
 
 class LinRegModel(object):
 
@@ -34,7 +34,7 @@ class LinRegModel(object):
         true_v = training_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
         data_m = training_x_df.to_numpy()                               
         data_m = np.hstack((np.ones((len(data_m),1)), data_m))          # matrix of data points
-        training_log = np.zeros((1, data_m.shape[1] + 3))               # initialize log
+        training_log = np.zeros((1, data_m.shape[1] + 4))               # initialize log
         
         for descent in range(descents):
 
@@ -42,7 +42,7 @@ class LinRegModel(object):
             err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)            # calculate error vector
             # training_log = np.vstack((training_log, np.hstack(( weights_v.T, np.array([self.calcMSE(err_v), 0]).reshape(1,2) ))))
 
-            for step in range(10000):
+            for step in range(50000):
                 
                 old_weights_v = np.array(weights_v, copy=True)
                 old_err_v = err_v
@@ -59,16 +59,16 @@ class LinRegModel(object):
                 if ((delta_weights_v < delta_weight_threshold).all()):  # end condition
                     iter_MSE = new_MSE
                     break
-                elif (new_MSE > old_MSE):                       # if gradient ascent by overstepping
-                    learning_rate = learning_rate * 0.7         # lower learning rate
-                    weights_v = old_weights_v                   # revert weights
-                    err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)
+                elif (new_MSE > old_MSE):                                           # if gradient ascent by overstepping
+                    learning_rate = learning_rate * 0.97                            # lower learning rate
+                    weights_v = old_weights_v                                       # revert weights
+                    err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)    # revert err_v
                 else:
-                    if (step % 100 == 0):
-                        training_log = np.vstack((training_log, np.hstack(( np.array([descent, step, new_MSE]).reshape(1,3), weights_v.T ))))
+                    if (step % math.ceil(math.log(step+2, 1.1)) == 0):
+                        training_log = np.vstack((training_log, np.hstack(( np.array([descent, step, new_MSE, learning_rate]).reshape(1,4), weights_v.T ))))
                     if (step % 1000 == 0):
                         print(f'Descent {descent} \t Step {step} \t MSE {new_MSE}')
-                    learning_rate = learning_rate * 1.1         # accelerate learning rate
+                    learning_rate = learning_rate * 1.01         # accelerate learning rate
             
 
         # After all descents
@@ -88,12 +88,12 @@ class LinRegModel(object):
                 fig1 = plt.figure(1)
                 ax = plt.axes(projection='3d')
                 regressand_indices = (0, 1)     # selects two regressands whose weight to plot
-                ax.set_xlabel('Weight ' + self.regressands[regressand_indices[0]])
-                ax.set_ylabel('Weight ' + self.regressands[regressand_indices[1]])
+                ax.set_xlabel(self.regressands[regressand_indices[0]] + ' weight')
+                ax.set_ylabel(self.regressands[regressand_indices[1]] + ' weight')
                 ax.set_zlabel('MSE')
                 ax.scatter3D(
-                    xs=training_log[:,4+regressand_indices[0]],     # weight
-                    ys=training_log[:,4+regressand_indices[1]],     # weight
+                    xs=training_log[:,5+regressand_indices[0]],     # weight
+                    ys=training_log[:,5+regressand_indices[1]],     # weight
                     zs=training_log[:,2],                           # MSE
                     c=training_log[:,1],                            # descent
                     cmap='plasma'
@@ -101,16 +101,17 @@ class LinRegModel(object):
 
             # plot of MSE, all weights over steps for a single descent
             if (descents == 1):
-                fig2, (ax1, ax2) = plt.subplots(2)
+                fig2, (ax1, ax2, ax3) = plt.subplots(3)
                 for idx, regressand in enumerate(self.regressands):
                     color = (random.random(), random.random(), random.random())
-                    ax2.plot(training_log[:,1], training_log[:,4+idx], c=color, label=regressand+' weight')
-                ax2.plot(training_log[:,1], training_log[:,3], c=color, label='bias') # plot bias
-                ax2.legend(loc='upper right')
+                    ax2.plot(training_log[:,1], training_log[:,5+idx], c=color, label=regressand+' weight')
+                ax2.plot(training_log[:,1], training_log[:,4], c=color, label='bias')   # plot bias
+                ax2.legend(fontsize='small', bbox_to_anchor=(1.01,1), loc="upper left")
                 ax2.set_xlabel('Step')
                 ax2.set_ylabel('Weight')
                 ax1.set_ylabel('MSE')
                 ax1.plot(training_log[:,1], training_log[:,2], 'b-', label='MSE')
+                ax3.plot(training_log[:,1], training_log[:,3], 'b-', label='Learning Rate')
 
             plt.show()
 
@@ -128,7 +129,7 @@ def train(model, datasets):
     mse = model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        descents=8, learning_rate=0.0000000001, delta_weight_threshold=0.0000005  # training hyperparameters
+        descents=1, learning_rate=2, delta_weight_threshold=0.00001  # training hyperparameters
     )
     return mse, model.weights_v
 
