@@ -60,19 +60,21 @@ def main():
     datasets = getDatasets(regressors, regressand)
 
     # Part 1 Training and Testing
-    print('P1 -- Start')
+    print('P1 -- Training')
     p1_model =                          part1.LinRegModel(draw_plots)
     p1_training_mse, p1_weights_v =     part1.train(p1_model, datasets)
     p1_testing_mse =                    part1.test(p1_model, datasets)
-    print('P1 -- Testing MSE: %.2f with weights %s' % (p1_testing_mse, p1_weights_v))
+    print('P1 -- Training MSE: %.2f' % (p1_training_mse))
+    print('P1 -- Testing  MSE: %.2f' % (p1_testing_mse))
 
 
     # Part 2 Training and Testing
-    print('P2 -- Start')
+    print('P2 -- Training')
     p2_model =                          linear_model.LinearRegression()
     p2_training_mse, p2_weights_v =     part2.train(p2_model, datasets)
     p2_testing_mse =                    part2.test(p2_model, datasets)
-    print('P2 -- Testing MSE: %.2f with weights %s' % (p2_testing_mse, p2_weights_v))
+    print('P2 -- Training MSE: %.2f' % (p2_training_mse))
+    print('P2 -- Testing  MSE: %.2f' % (p2_testing_mse))
 
     # if (draw_plots):
     #     plotRegressions(datasets, p1_weights_v, p2_weights_v)   # visualize regression lines on testing data
