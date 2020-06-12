@@ -111,7 +111,7 @@ class LinRegModel(object):
             # training_log = np.vstack((training_log, np.hstack(( weights_v.T, np.array([self.calcMSE(err_v), 0]).reshape(1,2) ))))
 
             step = 1
-            while (step < 10000):
+            while (step < 50000):
                 
                 old_weights_v = np.array(weights_v, copy=True)
                 old_err_v = err_v
@@ -167,7 +167,7 @@ def train(model, datasets):
     mse = model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        descents=1, learning_rate=2.1, delta_weight_threshold=0.0001   # training hyperparameters
+        descents=3, learning_rate=2.1, delta_weight_threshold=0.0001   # training hyperparameters
     )
     return mse, model.weights_v
 
