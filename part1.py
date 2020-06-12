@@ -19,6 +19,7 @@ class LinRegModel(object):
             ax_a1.set_xlabel(self.regressands[regressand_indices[0]] + ' weight')
             ax_a1.set_ylabel(self.regressands[regressand_indices[1]] + ' weight')
             ax_a1.set_zlabel('MSE')
+            ax_a1.set_title('Gradient Descent Visualization')
 
             def update(val):
                 ax_a1.clear()
@@ -59,7 +60,7 @@ class LinRegModel(object):
             slider1.on_changed(update)
             slider2.on_changed(update)
 
-        # plot of MSE, all weights over steps for a single descent
+        # plot of MSE, all weights, and learning rate, over steps for a single descent
         if (descents == 1):
             fig2, (ax_b1, ax_b2, ax_b3) = plt.subplots(3, constrained_layout=True)
             for idx, regressand in enumerate(self.regressands):
@@ -67,13 +68,13 @@ class LinRegModel(object):
                 ax_b2.plot(training_log[:,1], training_log[:,5+idx], c=color, label=regressand+' weight')
             ax_b2.plot(training_log[:,1], training_log[:,4], c=color, label='bias')   # plot bias
             ax_b2.legend(fontsize='small', bbox_to_anchor=(1.01,1), loc="upper left")
-            ax_b2.set_xlabel('Step')
             ax_b2.set_ylabel('Weight')
             ax_b1.set_ylabel('MSE')
             ax_b1.plot(training_log[:,1], training_log[:,2], 'b-', label='MSE')
-            ax_b1.set_title('Gradient Descent')
+            ax_b1.set_title('Step-based MSE, Weight, and Learning Rate Analysis')
             ax_b3.plot(training_log[:,1], training_log[:,3], 'b-', label='Learning Rate')
-            ax_b3.legend(fontsize='small', bbox_to_anchor=(1.01,1), loc="upper left")
+            ax_b3.set_ylabel('Learning Rate')
+            ax_b3.set_xlabel('Step')
 
         plt.show()
 
@@ -95,7 +96,7 @@ class LinRegModel(object):
         return new_weight
 
 
-    def train(self, training_x_df, training_y_df, descents=1, learning_rate=1, delta_weight_threshold=.00001):
+    def train(self, training_x_df, training_y_df, descents=1, learning_rate=2.03, delta_weight_threshold=0.0001):
         self.regressands = list(training_x_df)
         self.regressor = list(training_y_df)[0]
         true_v = training_y_df.to_numpy().reshape(-1, 1)                # vector of true area values
@@ -167,7 +168,7 @@ def train(model, datasets):
     mse = model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        descents=1, learning_rate=2.1, delta_weight_threshold=0.0001   # training hyperparameters
+        descents=1, learning_rate=2.03, delta_weight_threshold=0.0001   # training hyperparameters
     )
     return mse, model.weights_v
 
