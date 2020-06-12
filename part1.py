@@ -133,7 +133,7 @@ class LinRegModel(object):
                     weights_v = old_weights_v                                       # revert weights
                     err_v = self.calcErrV(x_m=data_m, w_v=weights_v, y_v=true_v)    # revert err_v
                 else:
-                    if (step % math.ceil(math.log(step+2, 1.01)/2) == 0):             # log more of earlier steps
+                    if (self.draw_plots and step % math.ceil(math.log(step+2, 1.01)/2) == 0):             # log more of earlier steps
                         training_log = np.vstack((training_log, np.hstack(( np.array([descent, step, new_MSE, learning_rate]).reshape(1,4), weights_v.T ))))
                     if (step % 1000 == 0):
                         print(f'Descent {descent} \t Step {step} \t MSE {new_MSE}')
@@ -167,7 +167,7 @@ def train(model, datasets):
     mse = model.train(
         training_x_df=datasets['training_x_df'],
         training_y_df=datasets['training_y_df'],
-        descents=3, learning_rate=2.1, delta_weight_threshold=0.0001   # training hyperparameters
+        descents=1, learning_rate=2.1, delta_weight_threshold=0.0001   # training hyperparameters
     )
     return mse, model.weights_v
 
